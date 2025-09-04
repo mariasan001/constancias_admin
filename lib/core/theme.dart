@@ -1,13 +1,10 @@
-//lib/core/theme.dart
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 ThemeData buildTheme() {
   return ThemeData(
     useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-    inputDecorationTheme: const InputDecorationTheme(
-      border: OutlineInputBorder(),
-    ),
-    visualDensity: VisualDensity.standard,
+    colorSchemeSeed: Colors.indigo,
+    textTheme: GoogleFonts.poppinsTextTheme(),
   );
 }

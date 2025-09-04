@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
 
@@ -12,6 +13,19 @@ class ConstanciasApp extends StatelessWidget {
       title: 'Constancias',
       theme: buildTheme(),
       routerConfig: router,
+
+      // 🔤 Localización
+      supportedLocales: const [
+        Locale('es', 'MX'),
+        Locale('es'),
+        Locale('en'),
+      ],
+      locale: const Locale('es', 'MX'),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
     );
   }
 }

@@ -13,10 +13,10 @@ extension TramiteX on Tramite {
         Tramite.constanciaNoInhabilitacion => 'Finiquito',
       };
   String get descripcion => switch (this) {
-        Tramite.constanciaLaboral => 'Acredita relación laboral vigente.',
-        Tramite.constanciaSueldo => 'Emitida con monto de percepciones.',
-        Tramite.constanciaAntiguedad => 'Tiempo de servicio acumulado.',
-        Tramite.constanciaNoInhabilitacion => 'Manifiesta no inhabilitación.',
+        Tramite.constanciaLaboral => '¿Para qué sirve? Acredita que no registras adeudos administrativos ante tu dependencia.',
+        Tramite.constanciaSueldo => '¿Qué es? Reporte de puestos, adscripciones y movimientos laborales por fecha.',
+        Tramite.constanciaAntiguedad => '¿Qué obtienes? Desglose de pagos (percepciones) y descuentos (deducciones) por periodo.',
+        Tramite.constanciaNoInhabilitacion => '¿Qué es? Documento de cierre de la relación laboral (cálculo y constancia).',
       };
   String get icon => switch (this) {
         Tramite.constanciaLaboral => 'work',
