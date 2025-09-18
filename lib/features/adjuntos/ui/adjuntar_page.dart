@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/flow_state.dart';
-import '../../../data/models.dart'; // DocumentoAdjunto, DocumentoTipo
+import '../../../data/models.dart'; // Tramite, DocumentoAdjunto, DocumentoTipo
 import '../../scanner/ui/scan_page.dart';
 import '../widgets/documento_item.dart';
 import '../../../data/model_buscar_user/models.dart'; // UserModel
@@ -31,6 +31,9 @@ class AdjuntarPage extends StatelessWidget {
     // Usuario obtenido en la búsqueda
     final UserModel? usuario = fs.usuario;
 
+    // Trámite seleccionado en HomePage
+    final Tramite? tramite = fs.tramite;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Adjuntar documentación')),
       body: SingleChildScrollView(
@@ -38,6 +41,28 @@ class AdjuntarPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 🔹 Trámite seleccionado
+            if (tramite != null)
+              Card(
+                margin: const EdgeInsets.only(bottom: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                color: Theme.of(context).colorScheme.surfaceVariant,
+                child: ListTile(
+                  leading: Icon(tramite.icon,
+                      size: 32, color: Theme.of(context).colorScheme.primary),
+                  title: Text(
+                    tramite.titulo,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(tramite.descripcion),
+                ),
+              ),
+
             // 🔹 Tarjeta con la info del usuario
             if (usuario != null)
               Card(

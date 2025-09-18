@@ -17,7 +17,6 @@ enum Tramite {
 }
 
 extension TramiteX on Tramite {
-  /// ID para enviar a la API
   int get id => switch (this) {
         Tramite.constanciaNoInhabilitacion => 1, // Finiquito
         Tramite.constanciaLaboral          => 2, // No adeudo
@@ -43,23 +42,21 @@ extension TramiteX on Tramite {
           '¿Qué obtienes? Desglose de pagos (percepciones) y descuentos (deducciones) por periodo.',
       };
 
-  /// Ícono sugerido para UI (puedes cambiar los que gustes)
   IconData get icon => switch (this) {
-        Tramite.constanciaNoInhabilitacion => Icons.assignment_turned_in_outlined, // Finiquito
-        Tramite.constanciaLaboral          => Icons.verified_user_outlined,       // No adeudo
-        Tramite.constanciaSueldo           => Icons.history_edu_outlined,         // Histórico
-        Tramite.constanciaAntiguedad       => Icons.receipt_long_outlined,        // Percep./Deduc.
+        Tramite.constanciaNoInhabilitacion => Icons.assignment_turned_in_outlined,
+        Tramite.constanciaLaboral          => Icons.verified_user_outlined,
+        Tramite.constanciaSueldo           => Icons.history_edu_outlined,
+        Tramite.constanciaAntiguedad       => Icons.receipt_long_outlined,
       };
 }
 
-/// Helpers para parsear por ID (p.ej. si llega un deep link o de BD)
 extension TramiteParse on Tramite {
   static Tramite? fromId(int id) {
     return switch (id) {
-      1 => Tramite.constanciaNoInhabilitacion, // Finiquito
-      2 => Tramite.constanciaLaboral,          // No adeudo
-      3 => Tramite.constanciaSueldo,           // Histórico
-      4 => Tramite.constanciaAntiguedad,       // Percep./Deduc.
+      1 => Tramite.constanciaNoInhabilitacion,
+      2 => Tramite.constanciaLaboral,
+      3 => Tramite.constanciaSueldo,
+      4 => Tramite.constanciaAntiguedad,
       _ => null,
     };
   }
@@ -105,8 +102,8 @@ class Contacto {
 }
 
 class Solicitud {
-  Tramite? tramite;                 // selección del usuario
-  ServidorPublico? servidor;        // resultado de la búsqueda
+  Tramite? tramite;
+  ServidorPublico? servidor;
   final List<DocumentoAdjunto> documentos;
   final Contacto contacto;
   bool consentimiento;
@@ -122,10 +119,8 @@ class Solicitud {
   })  : documentos = documentos ?? <DocumentoAdjunto>[],
         contacto = contacto ?? Contacto();
 
-  /// ID que espera la API (1..4). Null si aún no se selecciona.
   int? get tramiteTypeId => tramite?.id;
 
-  /// (Opcional) serializador mínimo para envío
   Map<String, dynamic> toPayload() => {
         if (tramiteTypeId != null) 'tramiteTypeId': tramiteTypeId,
         if (servidor != null) 'numeroServidorPublico': servidor!.numero,
@@ -134,6 +129,5 @@ class Solicitud {
           if (contacto.email != null) 'email': contacto.email,
         },
         'consentimiento': consentimiento,
-        // Los documentos generalmente van como multipart, por eso no se envían aquí.
       };
 }
