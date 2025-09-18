@@ -3,7 +3,6 @@ import 'package:constancias_admin/data/models.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/flow_state.dart';
-import '../../../services/api_client.dart';
 
 class SubmitPage extends StatefulWidget {
   const SubmitPage({super.key});
@@ -22,9 +21,7 @@ class _SubmitPageState extends State<SubmitPage> {
     });
 
     try {
-      final fs = context.read<FlowState>();               // solicitud actual
-   
-                      // guarda folio en estado (opcional)
+               // guarda folio en estado (opcional)
 
       setState(() {
 
