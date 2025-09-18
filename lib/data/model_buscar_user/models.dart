@@ -1,3 +1,39 @@
+
+import 'package:constancias_admin/data/models.dart';
+
+class Solicitud {
+  Tramite? tramite;             // selección del usuario
+  UserModel? usuario;           // 👈 ahora guardamos el UserModel completo
+  final List<DocumentoAdjunto> documentos;
+  final Contacto contacto;
+  bool consentimiento;
+  String? folio;
+
+  Solicitud({
+    this.tramite,
+    this.usuario,
+    List<DocumentoAdjunto>? documentos,
+    Contacto? contacto,
+    this.consentimiento = false,
+    this.folio,
+  })  : documentos = documentos ?? <DocumentoAdjunto>[],
+        contacto = contacto ?? Contacto();
+
+  int? get tramiteTypeId => tramite?.id;
+
+  Map<String, dynamic> toPayload() => {
+        if (tramiteTypeId != null) 'tramiteTypeId': tramiteTypeId,
+        if (usuario != null) 'userId': usuario!.userId,
+        'contacto': {
+          if (contacto.telefono != null) 'telefono': contacto.telefono,
+          if (contacto.email != null) 'email': contacto.email,
+        },
+        'consentimiento': consentimiento,
+      };
+}
+
+
+
 class Role {
   final int id;
   final String description;

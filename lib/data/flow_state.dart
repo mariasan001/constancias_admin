@@ -1,8 +1,18 @@
 import 'package:flutter/foundation.dart';
-import 'models.dart';
+import 'models.dart'; // Solicitud, DocumentoAdjunto, Tramite...
+import 'model_buscar_user/models.dart' hide Solicitud; // UserModel y Role
 
 class FlowState extends ChangeNotifier {
   final Solicitud _s = Solicitud();
+
+  // === Usuario logueado o buscado (UserModel de la API) ===
+  UserModel? _usuario;
+  UserModel? get usuario => _usuario;
+
+  void setUsuario(UserModel u) {
+    _usuario = u;
+    notifyListeners();
+  }
 
   // ==== Lecturas ====
   Solicitud get solicitud => _s;
@@ -16,8 +26,6 @@ class FlowState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Útil si recibes el ID (1..4) desde BD/deeplink.
-  /// Devuelve true si encontró y seteo el trámite.
   bool setTramiteById(int id) {
     final t = TramiteParse.fromId(id);
     if (t == null) return false;
@@ -26,6 +34,7 @@ class FlowState extends ChangeNotifier {
     return true;
   }
 
+  // 👇 Solo mantenlo si aún usas ServidorPublico para compatibilidad
   void setServidor(ServidorPublico sp) {
     _s.servidor = sp;
     notifyListeners();
@@ -66,8 +75,6 @@ class FlowState extends ChangeNotifier {
   }
 
   // ==== Validaciones ====
-
-  // Regla actual: INE obligatorio + (ALTA o BAJA)
   bool get documentosValidos {
     final tieneINE = _s.documentos.any((d) => d.tipo == DocumentoTipo.ine);
     final altaOBaja = _s.documentos.any((d) => d.tipo == DocumentoTipo.alta) ||
@@ -80,31 +87,26 @@ class FlowState extends ChangeNotifier {
     final hasTel = tel.length >= 10;
     final mail = (_s.contacto.email ?? '').trim();
     final hasMail = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(mail);
-    // Aceptamos que el usuario dé teléfono O correo (al menos uno).
     return hasTel || hasMail;
   }
 
   bool get consentimientoValido => _s.consentimiento == true;
 
-  /// ¿Tenemos lo mínimo para poder enviar el payload principal?
   bool get listoParaEnviar {
     return tramiteTypeId != null &&
-        _s.servidor != null &&
+        _usuario != null && // 👈 aquí en vez de _s.servidor
         documentosValidos &&
         contactoValido &&
         consentimientoValido;
   }
 
-  // ==== Payload para API ====
-
-  /// Construye el payload base para POST /solicitudes (sin documentos).
   Map<String, dynamic> buildPayload() {
-    return _s.toPayload();
+    return {
+      ..._s.toPayload(),
+      if (_usuario != null) 'userId': _usuario!.userId,
+    };
   }
 
-  // ==== Reset ====
-
-  /// Resetea el estado. Si [keepTramite] es true, conserva el tipo de trámite.
   void reset({bool keepTramite = false}) {
     final t = keepTramite ? _s.tramite : null;
     _s.tramite = t;
@@ -114,6 +116,7 @@ class FlowState extends ChangeNotifier {
     _s.contacto.email = null;
     _s.consentimiento = false;
     _s.folio = null;
+    _usuario = null;
     notifyListeners();
   }
 }

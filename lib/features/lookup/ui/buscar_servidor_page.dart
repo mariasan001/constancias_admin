@@ -1,5 +1,4 @@
-import 'package:constancias_admin/data/model_buscar_user/models.dart'
-    show UserModel;
+import 'package:constancias_admin/data/model_buscar_user/models.dart' show UserModel;
 import 'package:constancias_admin/services/dio.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -31,14 +30,13 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
   Future<void> _buscar() async {
     final numero = _controller.text.trim();
 
-    // Validación simple (solo dígitos, largo 5–12)
+    // Validación básica
     final isValid = RegExp(r'^\d{5,12}$').hasMatch(numero);
     if (!isValid) {
       setState(() {
         _error = "Número inválido, deben ser 5 a 12 dígitos";
         _usuario = null;
       });
-      debugPrint("[BuscarServidor] ❌ Número inválido: $numero");
       return;
     }
 
@@ -48,37 +46,25 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
       _usuario = null;
     });
 
-    debugPrint("[BuscarServidor] 🔎 Buscando usuario con ID: $numero");
-
     try {
       final user = await UserService.getUserById(numero);
-
-      debugPrint(
-        "[BuscarServidor] ✅ Usuario encontrado: ${user.name} - ${user.email}",
-      );
 
       if (!mounted) return;
       setState(() {
         _usuario = user;
         _loading = false;
       });
-    } on DioException catch (e) {
-      debugPrint("[BuscarServidor] ❌ DioException");
-      debugPrint("→ Type: ${e.type}");
-      debugPrint("→ Message: ${e.message}");
-      debugPrint("→ Response: ${e.response?.data}");
-      debugPrint("→ Status code: ${e.response?.statusCode}");
 
+      // Guardar en FlowState
+      context.read<FlowState>().setUsuario(user);
+    } on DioException {
       if (!mounted) return;
       setState(() {
         _error = "No encontrado. Verifica el número o consulta con RH.";
         _loading = false;
         _usuario = null;
       });
-    } catch (e, stack) {
-      debugPrint("[BuscarServidor] ⚠️ Error inesperado: $e");
-      debugPrint(stack.toString());
-
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _error = "Ocurrió un error inesperado";
@@ -90,8 +76,6 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
 
   @override
   Widget build(BuildContext context) {
-    final fs = context.read<FlowState>();
-
     return Scaffold(
       appBar: AppBar(title: const Text('Buscar servidor público')),
       body: Padding(
@@ -120,9 +104,6 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
                         icon: const Icon(Icons.clear),
                       ),
               ),
-              onChanged: (_) {
-                if (_error != null) setState(() => _error = null);
-              },
             ),
             const SizedBox(height: 8),
             FilledButton.icon(
@@ -139,107 +120,42 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
                 _error!,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
+
             if (_usuario != null && !_loading) ...[
               Card(
-                elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
+                elevation: 4,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 28,
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.primary,
-                            child: const Icon(
-                              Icons.person,
-                              color: Colors.white,
-                              size: 32,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _usuario!.name,
-                                  style: Theme.of(context).textTheme.titleLarge
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  _usuario!.roles.isNotEmpty
-                                      ? _usuario!.roles.first.description
-                                      : "Sin rol",
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.secondary,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                      Text("Nombre: ${_usuario!.name}"),
+                      Text("Correo: ${_usuario!.email}"),
+                      Text(
+                        "Rol: ${_usuario!.roles.isNotEmpty ? _usuario!.roles.first.description : 'Sin rol'}",
                       ),
-                      const SizedBox(height: 16),
-                      _infoRow(Icons.badge, "ID", _usuario!.userId),
-                      _infoRow(Icons.email, "Correo", _usuario!.email),
-                      _infoRow(
-                        Icons.phone,
-                        "Teléfono",
-                        _usuario!.phone ?? "No registrado",
-                      ),
-                      _infoRow(
-                        Icons.credit_card,
-                        "RFC",
-                        _usuario!.rfc ?? "No registrado",
-                      ),
-                      _infoRow(
-                        Icons.credit_card_outlined,
-                        "CURP",
-                        _usuario!.curp ?? "No registrado",
-                      ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
                           onPressed: () {
-                            context.push("/adjuntar"); // 👈 o Navigator.push
+                            context.push('/adjuntos');
                           },
                           icon: const Icon(Icons.arrow_forward),
-                          label: const Text("Continuar con documentación"),
+                          label: const Text("Continuar"),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
+              )
             ],
           ],
         ),
       ),
     );
   }
-}
-
-Widget _infoRow(IconData icon, String label, String value) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      children: [
-        Icon(icon, size: 20, color: Colors.grey[700]),
-        const SizedBox(width: 8),
-        Text("$label: ", style: const TextStyle(fontWeight: FontWeight.w600)),
-        Expanded(child: Text(value, overflow: TextOverflow.ellipsis)),
-      ],
-    ),
-  );
 }
