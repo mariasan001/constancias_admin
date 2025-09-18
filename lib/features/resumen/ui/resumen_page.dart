@@ -12,7 +12,7 @@ class ResumenPage extends StatefulWidget {
 }
 
 class _ResumenPageState extends State<ResumenPage> {
-  final _api = ApiClient();
+
   bool _sending = false;
   String? _folio;
 
@@ -25,9 +25,8 @@ class _ResumenPageState extends State<ResumenPage> {
       return;
     }
     setState(() => _sending = true);
-    final f = await _api.enviarSolicitud(fs.solicitud);
-    setState(() { _sending = false; _folio = f; });
-    fs.solicitud.folio = f;
+
+
   }
 
   @override

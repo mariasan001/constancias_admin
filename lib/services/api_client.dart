@@ -1,22 +1,34 @@
-import '../data/models.dart';
-import 'dart:math';
 
-class ApiClient {
-  Future<ServidorPublico?> buscarServidorPorNumero(String numero) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (numero.trim().isEmpty || numero.trim().length < 4) return null;
-    // demo: regresamos uno falso
-    return ServidorPublico(
-      numero: numero.trim(),
-      nombre: 'María Guadalupe Sandoval',
-      dependencia: 'Dirección General de Personal',
+import 'package:dio/dio.dart';
+enum Environment { casa, oficina, prod }
+class ApiService {
+  static const Environment currentEnv = Environment.oficina;
+  static String _getBaseUrl() {
+    switch (currentEnv) {
+      case Environment.casa:
+        return 'http://192.168.100.183:4040';   
+      case Environment.oficina:
+        return 'http://10.0.32.7:4040';      
+      case Environment.prod:
+        return '';
+    }
+  }
+  static late Dio _dio;
+  static void init() {
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: _getBaseUrl(),
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        extra: {'withCredentials': true},
+      ),
     );
-  }
 
-  Future<String> enviarSolicitud(Solicitud s) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    // demo: folio aleatorio
-    final n = Random().nextInt(999999).toString().padLeft(6, '0');
-    return 'CON-${DateTime.now().year}-$n';
   }
+  static Dio get dio => _dio;
+  static set dio(Dio client) => _dio = client;
+
 }

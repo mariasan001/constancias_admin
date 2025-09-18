@@ -23,11 +23,12 @@ class _SubmitPageState extends State<SubmitPage> {
 
     try {
       final fs = context.read<FlowState>();               // solicitud actual
-      final folio = await ApiClient().enviarSolicitud(fs.solicitud);
-      fs.solicitud.folio = folio;                         // guarda folio en estado (opcional)
+   
+                      // guarda folio en estado (opcional)
 
       setState(() {
-        _msg = 'Enviado correctamente.\nFolio: $folio';
+
+
       });
     } catch (e) {
       setState(() {
