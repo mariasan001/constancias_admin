@@ -36,7 +36,6 @@ class _EditarServidorPageState extends State<EditarServidorPage> {
 
   Future<void> _guardar() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _loading = true);
 
     try {
@@ -68,46 +67,122 @@ class _EditarServidorPageState extends State<EditarServidorPage> {
 
   @override
   Widget build(BuildContext context) {
+    const bg = Color(0xFFFAF7F2);
+    const brand = Color(0xFF7D5C0F);
     final usuario = widget.usuario;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Confirmar datos del servidor")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      backgroundColor: bg,
+      appBar: AppBar(
+        backgroundColor: bg,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        title: const Text(
+          "Confirmar datos del servidor",
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: Colors.black.withOpacity(0.08)),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("👤 ${usuario.name}", style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 12),
-              Text("Rol: ${usuario.roles.isNotEmpty ? usuario.roles.first.description : "Sin rol"}"),
-              const SizedBox(height: 20),
+          child: Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 3,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Encabezado con avatar e info básica
+                  Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: brand.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.person_outline, color: brand),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              usuario.name,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.2,
+                                  ),
+                            ),
+                            Text(
+                              "Rol: ${usuario.roles.isNotEmpty ? usuario.roles.first.description : "Sin rol"}",
+                              style: TextStyle(color: Colors.black.withOpacity(0.65)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
 
-              TextFormField(
-                controller: _correoCtrl,
-                decoration: const InputDecoration(labelText: "Correo electrónico"),
-                validator: (v) => v != null && v.contains("@") ? null : "Correo inválido",
-              ),
-              const SizedBox(height: 12),
+                  // Campo correo
+                  TextFormField(
+                    controller: _correoCtrl,
+                    validator: (v) => v != null && v.contains("@") ? null : "Correo inválido",
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: "Correo electrónico",
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
-              TextFormField(
-                controller: _telCtrl,
-                decoration: const InputDecoration(labelText: "Teléfono"),
-                keyboardType: TextInputType.phone,
-                validator: (v) => v != null && v.length >= 10 ? null : "Teléfono inválido",
-              ),
-              const SizedBox(height: 20),
+                  // Campo teléfono
+                  TextFormField(
+                    controller: _telCtrl,
+                    validator: (v) => v != null && v.length >= 10 ? null : "Teléfono inválido",
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: "Teléfono",
+                      prefixIcon: const Icon(Icons.phone_outlined),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
 
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _loading ? null : _guardar,
-                  icon: const Icon(Icons.save),
-                  label: _loading ? const Text("Guardando...") : const Text("Guardar y continuar"),
-                ),
+                  // Botón CTA
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _loading ? null : _guardar,
+                      icon: const Icon(Icons.save_outlined),
+                      label: _loading
+                          ? const Text("Guardando...")
+                          : const Text("Guardar y continuar"),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: brand,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
