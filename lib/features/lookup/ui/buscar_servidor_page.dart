@@ -1,11 +1,24 @@
 import 'package:constancias_admin/data/model_buscar_user/models.dart' show UserModel;
-import 'package:constancias_admin/services/dio.dart';
+import 'package:constancias_admin/services/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../data/flow_state.dart';
+
+// Servicio de usuario (GET y PUT)
+class UserService {
+  static Future<UserModel> getUserById(String userId) async {
+    final resp = await ApiService.dio.get('/api/users/$userId');
+    return UserModel.fromJson(resp.data);
+  }
+
+  static Future<UserModel> updateUser(String userId, Map<String, dynamic> data) async {
+    final resp = await ApiService.dio.put('/api/users/$userId', data: data);
+    return UserModel.fromJson(resp.data);
+  }
+}
 
 class BuscarServidorPage extends StatefulWidget {
   const BuscarServidorPage({super.key});
@@ -16,6 +29,8 @@ class BuscarServidorPage extends StatefulWidget {
 
 class _BuscarServidorPageState extends State<BuscarServidorPage> {
   final _controller = TextEditingController();
+  final _correoCtrl = TextEditingController();
+  final _telCtrl = TextEditingController();
 
   bool _loading = false;
   String? _error;
@@ -24,6 +39,8 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
   @override
   void dispose() {
     _controller.dispose();
+    _correoCtrl.dispose();
+    _telCtrl.dispose();
     super.dispose();
   }
 
@@ -52,6 +69,8 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
       if (!mounted) return;
       setState(() {
         _usuario = user;
+        _correoCtrl.text = user.email;
+        _telCtrl.text = user.phone ?? "";
         _loading = false;
       });
 
@@ -74,6 +93,36 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
     }
   }
 
+  Future<void> _guardar() async {
+    if (_usuario == null) return;
+
+    setState(() => _loading = true);
+
+    try {
+      final actualizado = await UserService.updateUser(_usuario!.userId, {
+        "name": _usuario!.name,
+        "email": _correoCtrl.text.trim(),
+        "phone": _telCtrl.text.trim(),
+      });
+
+      if (!mounted) return;
+      context.read<FlowState>().setUsuario(actualizado);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("✅ Información actualizada")),
+      );
+
+      context.push('/adjuntos');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("❌ Error al actualizar: $e")),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,6 +132,7 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Campo de búsqueda
             TextField(
               controller: _controller,
               keyboardType: TextInputType.number,
@@ -106,6 +156,7 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
               ),
             ),
             const SizedBox(height: 8),
+
             FilledButton.icon(
               onPressed: _loading ? null : _buscar,
               icon: const Icon(Icons.search),
@@ -132,21 +183,43 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Nombre: ${_usuario!.name}"),
-                      Text("Correo: ${_usuario!.email}"),
-                      Text(
-                        "Rol: ${_usuario!.roles.isNotEmpty ? _usuario!.roles.first.description : 'Sin rol'}",
+                      Text("👤 Nombre: ${_usuario!.name}",
+                          style: Theme.of(context).textTheme.titleMedium),
+                      Text("Rol: ${_usuario!.roles.isNotEmpty ? _usuario!.roles.first.description : 'Sin rol'}"),
+                      const SizedBox(height: 16),
+
+                      // Campos editables
+                      TextField(
+                        controller: _correoCtrl,
+                        decoration: const InputDecoration(labelText: "Correo electrónico"),
                       ),
                       const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: () {
-                            context.push('/adjuntos');
-                          },
-                          icon: const Icon(Icons.arrow_forward),
-                          label: const Text("Continuar"),
-                        ),
+                      TextField(
+                        controller: _telCtrl,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(labelText: "Teléfono"),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Botones de acción
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: _loading ? null : _guardar,
+                              icon: const Icon(Icons.save),
+                              label: const Text("Guardar y continuar"),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => context.push('/adjuntos'),
+                              icon: const Icon(Icons.arrow_forward),
+                              label: const Text("Es correcto, continuar"),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
