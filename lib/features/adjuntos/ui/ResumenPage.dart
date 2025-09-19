@@ -51,14 +51,14 @@ class ResumenPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 30),
                 FilledButton.icon(
-                  
                   onPressed: () {
-                      Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const HomePage()));
+                    Navigator.of(
+                      context,
+                    ).push(MaterialPageRoute(builder: (_) => const HomePage()));
                   },
                   icon: const Icon(Icons.arrow_back),
-                  label: const Text("Regresar"),
+                  label: const Text("Regresar"), 
+
                 ),
               ],
             ),
@@ -68,3 +68,7 @@ class ResumenPage extends StatelessWidget {
     );
   }
 }
+
+/**
+ * necesiot que me ayudes mira tengo esto 
+ */
