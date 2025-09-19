@@ -1,8 +1,11 @@
+import 'dart:convert'; // 👈 para jsonEncode
+import 'package:constancias_admin/features/adjuntos/ui/respuesta.dart';
+
 import 'package:constancias_admin/services/api_client.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:dio/dio.dart';
-import 'dart:convert'; // 👈 agrega esto
+
 import '../../../data/flow_state.dart';
 import '../../../data/models.dart'; // Tramite, DocumentoAdjunto, DocumentoTipo
 import '../../../data/model_buscar_user/models.dart'; // UserModel
@@ -19,90 +22,97 @@ class AdjuntarPage extends StatelessWidget {
     );
     if (pathOrUri == null) return;
     context.read<FlowState>().addDocumento(
-          DocumentoAdjunto(tipo: tipo, uri: pathOrUri),
-        );
+      DocumentoAdjunto(tipo: tipo, uri: pathOrUri),
+    );
   }
 
-Future<void> _enviarSolicitud(BuildContext context) async {
-  final fs = context.read<FlowState>();
-  final usuario = fs.usuario;
-  final tramite = fs.tramite;
-  final docs = fs.solicitud.documentos;
+  Future<void> _enviarSolicitud(BuildContext context) async {
+    final fs = context.read<FlowState>();
+    final usuario = fs.usuario;
+    final tramite = fs.tramite;
+    final docs = fs.solicitud.documentos;
 
-  if (usuario == null || tramite == null || docs.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("⚠️ Faltan datos para enviar la solicitud")),
-    );
-    return;
-  }
-
-  // ✅ payload que espera el backend
-  final payload = {
-    "tramiteTypeId": tramite.id,
-    "userId": usuario.userId,
-
-    "notes": "Solicitud desde app móvil",
-  };
-
-  try {
-    // ✅ convertimos el payload a String JSON
-    final formData = FormData.fromMap({
-      "payload": jsonEncode(payload),
-      "files": [
-        for (var d in docs)
-          await MultipartFile.fromFile(
-            d.uri,
-            filename: d.uri.split('/').last,
-            contentType: DioMediaType("application", "pdf"),
-          ),
-      ],
-      "docTypeIds": [for (var d in docs) d.tipo.index + 1],
-    });
-
-    debugPrint("📤 Enviando solicitud...");
-    debugPrint("Payload (string): ${jsonEncode(payload)}");
-    debugPrint("Archivos: ${docs.map((d) => d.uri).toList()}");
-
-    final resp = await ApiService.dio.post(
-      "/api/tramites/create-with-docs",
-      data: formData,
-      options: Options(
-        headers: {"Content-Type": "multipart/form-data"},
-      ),
-    );
-
-    debugPrint("✅ Respuesta completa:");
-    debugPrint("Status: ${resp.statusCode}");
-    debugPrint("Data: ${resp.data}");
-
-    if (resp.statusCode == 200 || resp.statusCode == 201) {
+    if (usuario == null || tramite == null || docs.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ Solicitud enviada con éxito")),
+        const SnackBar(
+          content: Text("⚠️ Faltan datos para enviar la solicitud"),
+        ),
       );
-      Navigator.of(context).pushReplacementNamed('/contacto');
-    } else {
+      return;
+    }
+
+    // ✅ payload
+    final payload = {
+      "tramiteTypeId": tramite.id,
+      "userId": usuario.userId,
+      "notes": "Solicitud desde app móvil",
+    };
+
+    try {
+      final formData = FormData.fromMap({
+        "payload": jsonEncode(payload),
+        "files": [
+          for (var d in docs)
+            await MultipartFile.fromFile(
+              d.uri,
+              filename: d.uri.split('/').last,
+              contentType: DioMediaType("application", "pdf"),
+            ),
+        ],
+        "docTypeIds": [for (var d in docs) d.tipo.index + 1],
+      });
+
+      debugPrint("📤 Enviando solicitud...");
+      debugPrint("Payload (string): ${jsonEncode(payload)}");
+      debugPrint("Archivos: ${docs.map((d) => d.uri).toList()}");
+
+      final resp = await ApiService.dio.post(
+        "/api/tramites/create-with-docs",
+        data: formData,
+        options: Options(headers: {"Content-Type": "multipart/form-data"}),
+      );
+
+      debugPrint("✅ Respuesta completa:");
+      debugPrint("Status: ${resp.statusCode}");
+      debugPrint("Data: ${resp.data}");
+
+      if (resp.statusCode == 200 || resp.statusCode == 201) {
+        final data = resp.data;
+
+        // ✅ Guarda el folio en FlowState
+        fs.setFolio(data["folio"]);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Solicitud enviada con éxito")),
+        );
+
+        // 👉 Redirige a ResumenPage
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const RespuestaPage()));
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: ${resp.statusMessage}")));
+      }
+    } on DioException catch (e) {
+      debugPrint("❌ DioException:");
+      debugPrint("Message: ${e.message}");
+      debugPrint("Response: ${e.response}");
+      debugPrint("Data: ${e.response?.data}");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${resp.statusMessage}")),
+        const SnackBar(content: Text("Error al enviar la solicitud (Dio)")),
+      );
+    } catch (e, st) {
+      debugPrint("⚠️ Error inesperado: $e");
+      debugPrint("Stack: $st");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Error inesperado al enviar la solicitud"),
+        ),
       );
     }
-  } on DioException catch (e) {
-    debugPrint("❌ DioException:");
-    debugPrint("Message: ${e.message}");
-    debugPrint("Response: ${e.response}");
-    debugPrint("Data: ${e.response?.data}");
-    debugPrint("Stack: ${e.stackTrace}");
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Error al enviar la solicitud (Dio)")),
-    );
-  } catch (e, st) {
-    debugPrint("⚠️ Error inesperado: $e");
-    debugPrint("Stack: $st");
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Error inesperado al enviar la solicitud")),
-    );
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -130,14 +140,16 @@ Future<void> _enviarSolicitud(BuildContext context) async {
                 ),
                 color: Theme.of(context).colorScheme.surfaceVariant,
                 child: ListTile(
-                  leading: Icon(tramite.icon,
-                      size: 32, color: Theme.of(context).colorScheme.primary),
+                  leading: Icon(
+                    tramite.icon,
+                    size: 32,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   title: Text(
                     tramite.titulo,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   subtitle: Text(tramite.descripcion),
                 ),
@@ -158,8 +170,9 @@ Future<void> _enviarSolicitud(BuildContext context) async {
                         children: [
                           CircleAvatar(
                             radius: 28,
-                            backgroundColor:
-                                Theme.of(context).colorScheme.primary,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
                             child: const Icon(
                               Icons.person,
                               color: Colors.white,
@@ -173,22 +186,18 @@ Future<void> _enviarSolicitud(BuildContext context) async {
                               children: [
                                 Text(
                                   usuario.name,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleLarge
+                                  style: Theme.of(context).textTheme.titleLarge
                                       ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 Text(
                                   usuario.roles.isNotEmpty
                                       ? usuario.roles.first.description
                                       : "Sin rol",
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
+                                  style: Theme.of(context).textTheme.bodyMedium
                                       ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .secondary,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.secondary,
                                       ),
                                 ),
                               ],
@@ -199,8 +208,11 @@ Future<void> _enviarSolicitud(BuildContext context) async {
                       const SizedBox(height: 12),
                       _infoRow(Icons.badge, "ID", usuario.userId),
                       _infoRow(Icons.email, "Correo", usuario.email),
-                      _infoRow(Icons.phone, "Teléfono",
-                          usuario.phone ?? "No registrado"),
+                      _infoRow(
+                        Icons.phone,
+                        "Teléfono",
+                        usuario.phone ?? "No registrado",
+                      ),
                       if (usuario.workUnit != null)
                         _infoRow(Icons.work, "Unidad", usuario.workUnit!),
                     ],
@@ -222,8 +234,9 @@ Future<void> _enviarSolicitud(BuildContext context) async {
               onScan: () => _scan(context, DocumentoTipo.ine),
               onRemove: ine == null
                   ? null
-                  : () =>
-                      context.read<FlowState>().removeDocumento(DocumentoTipo.ine),
+                  : () => context.read<FlowState>().removeDocumento(
+                      DocumentoTipo.ine,
+                    ),
             ),
             DocumentoItem(
               icon: Icons.file_open,
@@ -232,8 +245,9 @@ Future<void> _enviarSolicitud(BuildContext context) async {
               onScan: () => _scan(context, DocumentoTipo.alta),
               onRemove: alta == null
                   ? null
-                  : () =>
-                      context.read<FlowState>().removeDocumento(DocumentoTipo.alta),
+                  : () => context.read<FlowState>().removeDocumento(
+                      DocumentoTipo.alta,
+                    ),
             ),
             DocumentoItem(
               icon: Icons.file_open_outlined,
@@ -242,8 +256,9 @@ Future<void> _enviarSolicitud(BuildContext context) async {
               onScan: () => _scan(context, DocumentoTipo.baja),
               onRemove: baja == null
                   ? null
-                  : () =>
-                      context.read<FlowState>().removeDocumento(DocumentoTipo.baja),
+                  : () => context.read<FlowState>().removeDocumento(
+                      DocumentoTipo.baja,
+                    ),
             ),
 
             const SizedBox(height: 20),
@@ -253,10 +268,12 @@ Future<void> _enviarSolicitud(BuildContext context) async {
                   child: LinearProgressIndicator(
                     minHeight: 8,
                     borderRadius: BorderRadius.circular(10),
-                    value: [
-                      ine != null ? 1 : 0,
-                      (alta != null || baja != null) ? 1 : 0,
-                    ].where((e) => e == 1).length / 2,
+                    value:
+                        [
+                          ine != null ? 1 : 0,
+                          (alta != null || baja != null) ? 1 : 0,
+                        ].where((e) => e == 1).length /
+                        2,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -294,13 +311,8 @@ Future<void> _enviarSolicitud(BuildContext context) async {
         children: [
           Icon(icon, size: 20, color: Colors.grey[700]),
           const SizedBox(width: 8),
-          Text(
-            "$label: ",
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          Expanded(
-            child: Text(value, overflow: TextOverflow.ellipsis),
-          ),
+          Text("$label: ", style: const TextStyle(fontWeight: FontWeight.w600)),
+          Expanded(child: Text(value, overflow: TextOverflow.ellipsis)),
         ],
       ),
     );
