@@ -1,6 +1,5 @@
 import 'dart:convert'; // 👈 para jsonEncode
 import 'package:constancias_admin/features/adjuntos/ui/respuesta.dart';
-
 import 'package:constancias_admin/services/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -87,13 +86,13 @@ class AdjuntarPage extends StatelessWidget {
         );
 
         // 👉 Redirige a ResumenPage
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const RespuestaPage()));
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const RespuestaPage()),
+        );
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Error: ${resp.statusMessage}")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: ${resp.statusMessage}")),
+        );
       }
     } on DioException catch (e) {
       debugPrint("❌ DioException:");
@@ -125,59 +124,70 @@ class AdjuntarPage extends StatelessWidget {
     final UserModel? usuario = fs.usuario;
     final Tramite? tramite = fs.tramite;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Adjuntar documentación')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (tramite != null)
-              Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                color: Theme.of(context).colorScheme.surfaceVariant,
-                child: ListTile(
-                  leading: Icon(
-                    tramite.icon,
-                    size: 32,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  title: Text(
-                    tramite.titulo,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  subtitle: Text(tramite.descripcion),
-                ),
-              ),
+    // 🎨 Tokens (consistentes con tu línea)
+    const bg = Color(0xFFFAF7F2); // marfil cálido
+    const brand = Color(0xFF7D5C0F); // café acento
+    const ink = Color(0xFF1F1D1B); // casi negro
+    final muted = Colors.black.withOpacity(0.70);
 
-            if (usuario != null)
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+    // progreso (obligatorio: INE; opcional: ALTA o BAJA)
+    final docsCargados = [ine, alta, baja].where((e) => e != null).length;
+    final pasos = 2; // 1: INE, 2: (ALTA o BAJA)
+    final progreso = ( (ine != null ? 1 : 0) + ((alta != null || baja != null) ? 1 : 0) ) / pasos;
+
+    return Scaffold(
+      backgroundColor: bg,
+      appBar: AppBar(
+        backgroundColor: bg,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        title: const Text(
+          'Adjuntar documentación',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: Colors.black.withOpacity(0.08)),
+        ),
+      ),
+      body: LayoutBuilder(
+        builder: (context, c) {
+          final w = c.maxWidth;
+          final isMobile = w < 720;
+
+          return SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 14 : 20, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // ====== Banner del trámite (si existe) ======
+                if (tramite != null)
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: isMobile ? 760 : 980),
+                    child: Container(
+                      padding: EdgeInsets.all(isMobile ? 14 : 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.black.withOpacity(0.06)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Row(
                         children: [
-                          CircleAvatar(
-                            radius: 28,
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.primary,
-                            child: const Icon(
-                              Icons.person,
-                              color: Colors.white,
-                              size: 32,
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: brand.withOpacity(0.10),
+                              borderRadius: BorderRadius.circular(12),
                             ),
+                            child: Icon(tramite.icon, color: brand),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -185,121 +195,232 @@ class AdjuntarPage extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  usuario.name,
-                                  style: Theme.of(context).textTheme.titleLarge
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  usuario.roles.isNotEmpty
-                                      ? usuario.roles.first.description
-                                      : "Sin rol",
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.secondary,
+                                  tramite.titulo,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                        height: 1.1,
+                                        color: ink,
                                       ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  tramite.descripcion,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(color: Colors.black.withOpacity(0.65)),
                                 ),
                               ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      _infoRow(Icons.badge, "ID", usuario.userId),
-                      _infoRow(Icons.email, "Correo", usuario.email),
-                      _infoRow(
-                        Icons.phone,
-                        "Teléfono",
-                        usuario.phone ?? "No registrado",
+                    ),
+                  ),
+
+                const SizedBox(height: 12),
+
+                // ====== Tarjeta de usuario (si existe) ======
+                if (usuario != null)
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: isMobile ? 760 : 980),
+                    child: Container(
+                      padding: EdgeInsets.all(isMobile ? 14 : 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.black.withOpacity(0.06)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
                       ),
-                      if (usuario.workUnit != null)
-                        _infoRow(Icons.work, "Unidad", usuario.workUnit!),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Encabezado
+                          Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: brand.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.person_outline, color: brand),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      usuario.name,
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.w800,
+                                            height: 1.1,
+                                          ),
+                                    ),
+                                    Text(
+                                      usuario.roles.isNotEmpty
+                                          ? usuario.roles.first.description
+                                          : "Sin rol",
+                                      style: TextStyle(color: muted),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _infoRow(Icons.badge, "ID", usuario.userId),
+                          _infoRow(Icons.email_outlined, "Correo", usuario.email),
+                          _infoRow(Icons.phone_outlined, "Teléfono", usuario.phone ?? "No registrado"),
+                          if (usuario.workUnit != null)
+                            _infoRow(Icons.work_outline, "Unidad", usuario.workUnit!),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                const SizedBox(height: 20),
+
+                // ====== Sección de documentos ======
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: isMobile ? 760 : 980),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Encabezado de sección
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(color: Colors.black.withOpacity(0.06)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.picture_as_pdf_outlined, size: 16, color: brand),
+                                    const SizedBox(width: 6),
+                                    const Text(
+                                      "PDF requeridos",
+                                      style: TextStyle(fontWeight: FontWeight.w700),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            "${docsCargados}/3",
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Items (tu widget DocumentoItem mantiene la lógica)
+                      DocumentoItem(
+                        icon: Icons.badge,
+                        title: 'INE (obligatorio)',
+                        value: ine,
+                        onScan: () => _scan(context, DocumentoTipo.ine),
+                        onRemove: ine == null
+                            ? null
+                            : () => context.read<FlowState>().removeDocumento(DocumentoTipo.ine),
+                      ),
+                      DocumentoItem(
+                        icon: Icons.file_open,
+                        title: 'Formato de ALTA',
+                        value: alta,
+                        onScan: () => _scan(context, DocumentoTipo.alta),
+                        onRemove: alta == null
+                            ? null
+                            : () => context.read<FlowState>().removeDocumento(DocumentoTipo.alta),
+                      ),
+                      DocumentoItem(
+                        icon: Icons.file_open_outlined,
+                        title: 'Formato de BAJA',
+                        value: baja,
+                        onScan: () => _scan(context, DocumentoTipo.baja),
+                        onRemove: baja == null
+                            ? null
+                            : () => context.read<FlowState>().removeDocumento(DocumentoTipo.baja),
+                      ),
                     ],
                   ),
                 ),
-              ),
 
-            const SizedBox(height: 20),
-            const Text(
-              '📑 Escanea tus documentos (PDF):',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
-            DocumentoItem(
-              icon: Icons.badge,
-              title: 'INE (obligatorio)',
-              value: ine,
-              onScan: () => _scan(context, DocumentoTipo.ine),
-              onRemove: ine == null
-                  ? null
-                  : () => context.read<FlowState>().removeDocumento(
-                      DocumentoTipo.ine,
-                    ),
-            ),
-            DocumentoItem(
-              icon: Icons.file_open,
-              title: 'Formato de ALTA',
-              value: alta,
-              onScan: () => _scan(context, DocumentoTipo.alta),
-              onRemove: alta == null
-                  ? null
-                  : () => context.read<FlowState>().removeDocumento(
-                      DocumentoTipo.alta,
-                    ),
-            ),
-            DocumentoItem(
-              icon: Icons.file_open_outlined,
-              title: 'Formato de BAJA',
-              value: baja,
-              onScan: () => _scan(context, DocumentoTipo.baja),
-              onRemove: baja == null
-                  ? null
-                  : () => context.read<FlowState>().removeDocumento(
-                      DocumentoTipo.baja,
-                    ),
-            ),
-
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: LinearProgressIndicator(
-                    minHeight: 8,
-                    borderRadius: BorderRadius.circular(10),
-                    value:
-                        [
-                          ine != null ? 1 : 0,
-                          (alta != null || baja != null) ? 1 : 0,
-                        ].where((e) => e == 1).length /
-                        2,
+                // ====== Progreso ======
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: isMobile ? 760 : 980),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: LinearProgressIndicator(
+                            minHeight: 8,
+                            value: progreso,
+                            backgroundColor: Colors.black.withOpacity(0.06),
+                            color: brand,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        "${(progreso * 100).round()}%",
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  '${[ine, alta, baja].where((e) => e != null).length}/3',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+
+                const SizedBox(height: 26),
+
+                // ====== CTA Enviar ======
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: isMobile ? 760 : 980),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: FilledButton.icon(
+                        key: ValueKey<bool>(fs.documentosValidos),
+                        onPressed: fs.documentosValidos ? () => _enviarSolicitud(context) : null,
+                        icon: const Icon(Icons.send_rounded),
+                        label: Text(
+                          fs.documentosValidos ? 'Enviar solicitud' : 'Adjunta los documentos para continuar',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: brand,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 30),
-
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: fs.documentosValidos
-                    ? () => _enviarSolicitud(context)
-                    : null,
-                icon: const Icon(Icons.send),
-                label: const Text(
-                  'Enviar solicitud',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -309,15 +430,12 @@ class AdjuntarPage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.grey[700]),
+          Icon(icon, size: 18, color: Colors.black.withOpacity(0.65)),
           const SizedBox(width: 8),
-          Text("$label: ", style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text("$label: ", style: const TextStyle(fontWeight: FontWeight.w700)),
           Expanded(child: Text(value, overflow: TextOverflow.ellipsis)),
         ],
       ),
     );
   }
 }
-/**
- * 
- */

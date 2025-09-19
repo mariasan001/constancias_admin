@@ -1,5 +1,4 @@
-import 'package:constancias_admin/data/model_buscar_user/models.dart'
-    show UserModel;
+import 'package:constancias_admin/data/model_buscar_user/models.dart' show UserModel;
 import 'package:constancias_admin/services/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -129,9 +128,9 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
       context.push('/adjuntos');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("❌ Error al actualizar: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("❌ Error al actualizar: $e")),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -327,12 +326,10 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
                           label: 'Pegar',
                           icon: Icons.content_paste_rounded,
                           onTap: () async {
-                            // UI helper simple (sin lógica extra)
                             final data = await Clipboard.getData('text/plain');
-                            if (data?.text != null)
-                              setState(
-                                () => _controller.text = data!.text!.trim(),
-                              );
+                            if (data?.text != null) {
+                              setState(() => _controller.text = data!.text!.trim());
+                            }
                           },
                         ),
                       ],
@@ -380,8 +377,12 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
                 // =============================
                 //  Resultado / Edición de datos
                 // =============================
-                if (_usuario != null && !_loading)
-                  ConstrainedBox(
+                AnimatedCrossFade(
+                  duration: const Duration(milliseconds: 220),
+                  crossFadeState: (_usuario != null && !_loading)
+                      ? CrossFadeState.showFirst
+                      : CrossFadeState.showSecond,
+                  firstChild: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: isMobile ? 720 : 840),
                     child: Card(
                       color: Colors.white,
@@ -412,11 +413,10 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        _usuario!.name,
+                                        _usuario?.name ?? '',
                                         style: Theme.of(context)
                                             .textTheme
                                             .titleMedium
@@ -426,7 +426,7 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
                                             ),
                                       ),
                                       Text(
-                                        "Rol: ${_usuario!.roles.isNotEmpty ? _usuario!.roles.first.description : 'Sin rol'}",
+                                        "Rol: ${_usuario?.roles.isNotEmpty == true ? _usuario!.roles.first.description : 'Sin rol'}",
                                         style: TextStyle(color: muted),
                                       ),
                                     ],
@@ -502,39 +502,34 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
                                     icon: const Icon(
                                       Icons.check_circle_outline,
                                       size: 20,
-                                      color: ink,
+                                      color: Colors.black87,
                                     ),
                                     label: const Text(
                                       "Es correcto, continuar",
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         letterSpacing: 0.3,
-                                        color: Colors
-                                            .black87, // texto negro elegante
+                                        color: Colors.black87,
                                       ),
                                     ),
-                                    style:
-                                        OutlinedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 20,
-                                            vertical: 16,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              14,
-                                            ),
-                                          ),
-                                          side: const BorderSide(
-                                            color: Colors.black87,
-                                            width: 1.4,
-                                          ),
-                                          backgroundColor: Colors.white,
-                                          elevation: 0,
-                                        ).copyWith(
-                                          overlayColor: WidgetStateProperty.all(
-                                            Colors.black.withOpacity(0.06),
-                                          ),
-                                        ),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 16,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      side: const BorderSide(
+                                        color: Colors.black87,
+                                        width: 1.4,
+                                      ),
+                                      backgroundColor: Colors.white,
+                                    ).copyWith(
+                                      overlayColor: WidgetStateProperty.all(
+                                        Colors.black.withOpacity(0.06),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -544,6 +539,8 @@ class _BuscarServidorPageState extends State<BuscarServidorPage> {
                       ),
                     ),
                   ),
+                  secondChild: const SizedBox.shrink(),
+                ),
               ],
             ),
           );
@@ -565,7 +562,7 @@ class _HintChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brand = const Color(0xFF7D5C0F);
+    const brand = Color(0xFF7D5C0F);
     return InkWell(
       borderRadius: BorderRadius.circular(999),
       onTap: onTap,
