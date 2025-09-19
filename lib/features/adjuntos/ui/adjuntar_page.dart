@@ -1,10 +1,14 @@
+import 'package:constancias_admin/services/api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:dio/dio.dart';
+import 'dart:convert'; // 👈 agrega esto
 import '../../../data/flow_state.dart';
 import '../../../data/models.dart'; // Tramite, DocumentoAdjunto, DocumentoTipo
+import '../../../data/model_buscar_user/models.dart'; // UserModel
+import '../../../services/dio.dart'; // ApiService
 import '../../scanner/ui/scan_page.dart';
 import '../widgets/documento_item.dart';
-import '../../../data/model_buscar_user/models.dart'; // UserModel
 
 class AdjuntarPage extends StatelessWidget {
   const AdjuntarPage({super.key});
@@ -19,19 +23,96 @@ class AdjuntarPage extends StatelessWidget {
         );
   }
 
+Future<void> _enviarSolicitud(BuildContext context) async {
+  final fs = context.read<FlowState>();
+  final usuario = fs.usuario;
+  final tramite = fs.tramite;
+  final docs = fs.solicitud.documentos;
+
+  if (usuario == null || tramite == null || docs.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("⚠️ Faltan datos para enviar la solicitud")),
+    );
+    return;
+  }
+
+  // ✅ payload que espera el backend
+  final payload = {
+    "tramiteTypeId": tramite.id,
+    "userId": usuario.userId,
+
+    "notes": "Solicitud desde app móvil",
+  };
+
+  try {
+    // ✅ convertimos el payload a String JSON
+    final formData = FormData.fromMap({
+      "payload": jsonEncode(payload),
+      "files": [
+        for (var d in docs)
+          await MultipartFile.fromFile(
+            d.uri,
+            filename: d.uri.split('/').last,
+            contentType: DioMediaType("application", "pdf"),
+          ),
+      ],
+      "docTypeIds": [for (var d in docs) d.tipo.index + 1],
+    });
+
+    debugPrint("📤 Enviando solicitud...");
+    debugPrint("Payload (string): ${jsonEncode(payload)}");
+    debugPrint("Archivos: ${docs.map((d) => d.uri).toList()}");
+
+    final resp = await ApiService.dio.post(
+      "/api/tramites/create-with-docs",
+      data: formData,
+      options: Options(
+        headers: {"Content-Type": "multipart/form-data"},
+      ),
+    );
+
+    debugPrint("✅ Respuesta completa:");
+    debugPrint("Status: ${resp.statusCode}");
+    debugPrint("Data: ${resp.data}");
+
+    if (resp.statusCode == 200 || resp.statusCode == 201) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("✅ Solicitud enviada con éxito")),
+      );
+      Navigator.of(context).pushReplacementNamed('/contacto');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: ${resp.statusMessage}")),
+      );
+    }
+  } on DioException catch (e) {
+    debugPrint("❌ DioException:");
+    debugPrint("Message: ${e.message}");
+    debugPrint("Response: ${e.response}");
+    debugPrint("Data: ${e.response?.data}");
+    debugPrint("Stack: ${e.stackTrace}");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Error al enviar la solicitud (Dio)")),
+    );
+  } catch (e, st) {
+    debugPrint("⚠️ Error inesperado: $e");
+    debugPrint("Stack: $st");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Error inesperado al enviar la solicitud")),
+    );
+  }
+}
+
+
   @override
   Widget build(BuildContext context) {
     final fs = context.watch<FlowState>();
 
-    // Documentos ya cargados
     final ine = fs.getDoc(DocumentoTipo.ine)?.uri;
     final alta = fs.getDoc(DocumentoTipo.alta)?.uri;
     final baja = fs.getDoc(DocumentoTipo.baja)?.uri;
 
-    // Usuario obtenido en la búsqueda
     final UserModel? usuario = fs.usuario;
-
-    // Trámite seleccionado en HomePage
     final Tramite? tramite = fs.tramite;
 
     return Scaffold(
@@ -41,7 +122,6 @@ class AdjuntarPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔹 Trámite seleccionado
             if (tramite != null)
               Card(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -63,7 +143,6 @@ class AdjuntarPage extends StatelessWidget {
                 ),
               ),
 
-            // 🔹 Tarjeta con la info del usuario
             if (usuario != null)
               Card(
                 shape: RoundedRectangleBorder(
@@ -136,7 +215,6 @@ class AdjuntarPage extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // 🔹 Documentos
             DocumentoItem(
               icon: Icons.badge,
               title: 'INE (obligatorio)',
@@ -169,8 +247,6 @@ class AdjuntarPage extends StatelessWidget {
             ),
 
             const SizedBox(height: 20),
-
-            // 🔹 Barra de progreso
             Row(
               children: [
                 Expanded(
@@ -190,19 +266,17 @@ class AdjuntarPage extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 30),
 
-            // 🔹 Botón final
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
                 onPressed: fs.documentosValidos
-                    ? () => Navigator.of(context).pushNamed('/contacto')
+                    ? () => _enviarSolicitud(context)
                     : null,
-                icon: const Icon(Icons.play_arrow),
+                icon: const Icon(Icons.send),
                 label: const Text(
-                  'Iniciar proceso de constancia',
+                  'Enviar solicitud',
                   style: TextStyle(fontSize: 16),
                 ),
               ),
